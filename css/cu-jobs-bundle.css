@@ -1,0 +1,8 @@
+ul.jobs-list, ul.jobs-list > li { list-style: none; margin: 0; padding: 0; }
+
+.cu-job-listing { border-bottom: 1px solid #e7e7e7; margin-bottom: 20px; padding-bottom: 20px; }
+.cu-job-listing h3 { font-size: 100%; font-weight: normal !important; margin: 0; }
+.cu-job-listing h4 { font-size: 100%; font-weight: bold !important; display: inline; margin: 0; padding: 0; }
+ul.jobs-list li:last-child .cu-job-listing { border: none; margin: 0; padding: 0; }
+.cu-job-listing .cu-job-listing-content { font-size: 75%; display: flex; flex-direction: row; flex-wrap: wrap; display: none; }
+.cu-job-listing .cu-job-listing-content > *:after { content: " | "; }

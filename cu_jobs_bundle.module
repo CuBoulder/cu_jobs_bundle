@@ -1,0 +1,126 @@
+<?php
+/**
+ * @file
+ * Code for the Jobs Bundle feature.
+ */
+
+include_once 'cu_jobs_bundle.features.inc';
+
+
+function cu_jobs_bundle_secure_permissions($role) {
+  $permissions = array(
+    'anonymous user' => array(
+      'view any cu_jobs_feed bean',
+    ),
+    'authenticated user' => array(
+      'view any cu_jobs_feed bean',
+    ),
+    'administrator' => array(
+      'create any cu_jobs_feed bean',
+      'delete any cu_jobs_feed bean',
+      'edit any cu_jobs_feed bean',
+      'view any cu_jobs_feed bean',
+    ),
+    'content_editor' => array(
+      'create any cu_jobs_feed bean',
+      'delete any cu_jobs_feed bean',
+      'edit any cu_jobs_feed bean',
+      'view any cu_jobs_feed bean',
+    ),
+    'developer' => array(
+      'create any cu_jobs_feed bean',
+      'delete any cu_jobs_feed bean',
+      'edit any cu_jobs_feed bean',
+      'view any cu_jobs_feed bean',
+    ),
+    'site_editor' => array(
+      'create any cu_jobs_feed bean',
+      'delete any cu_jobs_feed bean',
+      'edit any cu_jobs_feed bean',
+      'view any cu_jobs_feed bean',
+    ),
+    'site_owner' => array(
+      'create any cu_jobs_feed bean',
+      'delete any cu_jobs_feed bean',
+      'edit any cu_jobs_feed bean',
+      'view any cu_jobs_feed bean',
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}
+
+function cu_jobs_bundle_theme_registry_alter(&$theme_registry) {
+  $module_path = drupal_get_path('module', 'cu_jobs_bundle');
+  $theme_registry_copy = $theme_registry;
+  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'bean', $module_path);
+  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+  $hooks = array('bean');
+  foreach ($hooks as $h) {
+	  if (isset($theme_registry[$h]['theme paths'])) {
+	    $first_element = array_shift($theme_registry[$h]['theme paths']);
+	    array_unshift($theme_registry[$h]['theme paths'], array_shift($theme_registry[$h]['theme paths']), $module_path);
+  	}
+  }
+}
+
+function cu_jobs_bundle_preprocess_entity(&$vars) {
+  $entity_type = $vars['elements']['#entity_type'];
+  $bundle = $vars['elements']['#bundle'];
+
+
+  if ($entity_type == 'bean' && $bundle == 'cu_jobs_feed') {
+    $number_of_jobs = $vars['field_jobs_feed_count'][0]['value'];
+    $end_point = cu_jobs_bundle_endpoint();
+    $response = drupal_http_request($end_point);
+    if ($response->code == '200') {
+
+      $results = drupal_json_decode($response->data, true);
+
+      // Get the labels in a better format.
+      $columns = $results['columns'];
+      $labels = array();
+      foreach ($columns as $column) {
+        $key = $column['alias'];
+        $labels[$key] = $column;
+      }
+      $jobs = $results['data'];
+      // Only show the selected amount of positions
+      $jobs = array_slice($jobs, 0, $number_of_jobs);
+
+      // Build array of jobs
+      $vars['content']['jobs_feed'] = array();
+      $jobs_data = array(
+        'labels' => $labels,
+      );
+      foreach ($jobs as $key => $job) {
+        $jobs_data['job'] = $job;
+        $vars['content']['jobs_feed'][$key]['#markup'] = theme('cu_job_listing', array('content' => $jobs_data));
+      }
+    }
+  }
+}
+
+function cu_jobs_bundle_theme(&$existing, $type, $theme, $path) {
+  $registry = array();
+  $template_dir = drupal_get_path('module', 'cu_jobs_bundle') . '/templates';
+  $registry['cu_job_listing'] = array(
+    'template' => 'cu-job-listing',
+    'path' => $template_dir,
+    'render element' => 'elements',
+  );
+
+  return $registry;
+}
+
+function cu_jobs_bundle_endpoint($type = NULL) {
+
+  if ($type) {
+
+  }
+  else {
+    return 'https://colorado.avature.net/PublicReports/1TmAFxZVlBWVfEHaI6eYvH1miWEwMQbz/raw/json';
+  }
+}
